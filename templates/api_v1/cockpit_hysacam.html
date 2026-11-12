@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYSACAM — Feuille de Route Terrain</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body class="bg-dark text-light">
+
+    <!-- Header Mobile -->
+    <div class="p-3 bg-warning text-dark shadow-sm sticky-top d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-truck"></i> HYSACAM — Équipe Éboueurs</h5>
+        <span class="badge bg-danger fs-6">{{ missions_en_cours }} À faire</span>
+    </div>
+
+    <div class="container py-3">
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <p class="text-muted small">Chauffeur connecté : <strong>{{ request.user.username }}</strong></p>
+        <h6 class="text-uppercase tracking-wider text-warning fw-bold mb-3">Points d'interventions affectés :</h6>
+
+        <!-- Liste des missions sous forme de cartes d'intervention -->
+        {% for mission in missions %}
+        <div class="card bg-secondary text-white border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge {% if mission.statut == 'en_cours' %}bg-danger animate-pulse{% else %}bg-success{% endif %}">
+                        {% if mission.statut == 'en_cours' %}⚠️ EN ATTENTE D'ENLÈVEMENT{% else %}✅ NETTOYÉ{% endif %}
+                    </span>
+                    <small class="text-light-50">Ref: #{{ mission.id }}</small>
+                </div>
+
+                <!-- Descriptif et repères locaux -->
+                <h5 class="card-title mt-2 fw-semibold">{{ mission.description }}</h5>
+                <p class="card-text text-light-50 small">
+                    <i class="bi bi-calendar3"></i> Assigné le : {{ mission.date_signalement|date:"d/m à H:i" }} <br>
+                    <i class="bi bi-building"></i> Commune : <strong>{{ mission.commune_secteur }}</strong>
+                </p>
+
+                <!-- Affichage de l'image de l'anomalie -->
+                {% if mission.photo %}
+                <div class="mb-3 text-center">
+                    <img src="{{ mission.photo.url }}" class="img-fluid rounded border border-dark" style="max-height: 180px; width: 100%; object-fit: cover;">
+                </div>
+                {% endif %}
+
+                <hr class="border-light-50">
+
+                <!-- Actions de navigation et validation -->
+                <div class="d-grid gap-2">
+                    <!-- Bouton GPS : Ouvre instantanément Google Maps / Map Camion -->
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ mission.latitude }},{{ mission.longitude }}" target="_blank" class="btn btn-primary fw-bold">
+                        <i class="bi bi-compass-fill"></i> Lancer l'itinéraire GPS
+                    </a>
+
+                    <!-- Si la mission est en cours, possibilité de la clore -->
+                    {% if mission.statut == 'en_cours' %}
+                        <form action="{% url 'cloturer_mission' mission.id %}" method="POST" onsubmit="return confirm('Confirmez-vous que ce point noir a été entièrement nettoyé et chargé dans la benne ?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success w-100 fw-bold py-2">
+                                <i class="bi bi-check2-circle"></i> Confirmer l'enlèvement des déchets
+                            </button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-outline-light disabled fw-bold">
+                            <i class="bi bi-cloud-check-fill"></i> Mission accomplie et synchronisée
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <i class="bi bi-emoji-smile text-warning" style="font-size: 3rem;"></i>
+            <p class="mt-2 text-muted">Excellente nouvelle ! Votre feuille de route est vide. Aucun dépôt d'ordures à traiter pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+

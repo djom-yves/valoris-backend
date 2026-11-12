@@ -1,0 +1,1 @@
+web: gunicorn core_assainissement.wsgi:application --log-file -

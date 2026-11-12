@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALORIS — Cockpit {{ mairie_nom }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark bg-success shadow-sm mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1"><i class="bi bi-building-fill-check"></i> VALORIS — Cockpit Secrétariat {{ mairie_nom }}</span>
+            <span class="navbar-text text-white">Connecté : <strong>{{ request.user.username }}</strong></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert shadow-sm alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h4 class="card-title mb-4 text-secondary"><i class="bi bi-bell-fill text-warning"></i> Flux de signalements Citoyens</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Photo</th>
+                                <th>Description / Urgence</th>
+                                <th>Date Signalement</th>
+                                <th>Statut Actuel</th>
+                                <th>Géolocalisation GPS</th>
+                                <th>Assignation Opérateur</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alerte in alertes %}
+                            <tr>
+                                <td>
+                                    {% if alerte.photo %}
+                                        <a href="{{ alerte.photo.url }}" target="_blank">
+                                            <img src="{{ alerte.photo.url }}" class="rounded shadow-sm" style="width: 70px; height: 50px; object-fit: cover;">
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Pas d'image</span>
+                                    {% endif %}
+                                </td>
+                                
+                                <td>
+                                    <small class="d-block text-muted">ID: #{{ alerte.id }}</small>
+                                    <strong>{{ alerte.description|truncatewords:15 }}</strong>
+                                </td>
+                                
+                                <td>{{ alerte.date_signalement|date:"d M Y à H:i" }}</td>
+                                
+                                <td>
+                                    {% if alerte.statut == 'recue' %}
+                                        <span class="badge bg-danger">Non traité</span>
+                                    {% elif alerte.statut == 'en_cours' %}
+                                        <span class="badge bg-warning text-dark">En cours (HYSACAM)</span>
+                                    {% elif alerte.statut == 'resolue' %}
+                                        <span class="badge bg-success">Nettoyé 👍</span>
+                                    {% endif %}
+                                </td>
+                                
+                                <td>
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ alerte.latitude }},{{ alerte.longitude }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-geo-alt-fill"></i> Voir l'itinéraire GPS
+                                    </a>
+                                </td>
+                                
+                                <td>
+                                    {% if alerte.statut == 'recue' %}
+                                        <form action="{% url 'assigner_ordonnance' alerte.id %}" method="POST" class="d-flex gap-2">
+                                            {% csrf_markup %} {% csrf_token %}
+                                            <select name="collecteur_id" class="form-select form-select-sm" required>
+                                                <option value="" selected disabled>Choisir un opérateur...</option>
+                                                {% for coll in collecteurs %}
+                                                    <option value="{{ coll.id }}">{{ coll.username }} (HYSACAM)</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-success">Assigner</button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted"><i class="bi bi-check-circle-fill text-success"></i> Assigné à : <strong>{{ alerte.assigne_a.username }}</strong></span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">Aucune alerte signalée dans votre secteur pour le moment. Rues propres ! ✨</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
